@@ -113,8 +113,9 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           return (
             <button
               key={tab.id}
+              id={`mobile-nav-tab-${tab.id}`}
               onClick={() => handleSelectTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-all relative ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-md transition-all relative cursor-pointer ${
                 isActive
                   ? 'text-bpp-marine dark:text-blue-400 font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
