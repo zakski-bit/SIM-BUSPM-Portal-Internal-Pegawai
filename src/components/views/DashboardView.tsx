@@ -261,12 +261,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </span>
             </div>
             
-            {/* Embedded 16:9 Compact Video Player */}
+            {/* Embedded 16:9 Compact Video Player with Privacy-Enhanced Mode (No-Cookie) */}
             <div className="relative w-full aspect-video rounded-md overflow-hidden bg-black shadow-inner border border-slate-200 dark:border-slate-800">
               <iframe
-                src="https://www.youtube.com/embed/D5gZ-uuENzU?rel=0"
+                src="https://www.youtube-nocookie.com/embed/D5gZ-uuENzU?rel=0"
                 title="Profil Balai Uji Standar Karantina Ikan dan Mutu Hasil Perikanan (BUSPM KKP)"
                 className="w-full h-full"
+                loading="lazy"
+                referrerPolicy="no-referrer"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />

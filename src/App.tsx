@@ -25,13 +25,21 @@ import { ProjectView } from './components/views/ProjectView';
 import { DocsView } from './components/views/DocsView';
 import { PengumumanView } from './components/views/PengumumanView';
 import { MobileNav } from './components/MobileNav';
+import { AuditLogModal } from './components/AuditLogModal';
+import { recordAuditLog, validateArray, isValidEmployee, isValidSchedule, isValidProject, isValidNote, isValidDocument } from './utils/security';
 
-// Safe localStorage loader with defensive fallback
-function loadFromStorage<T>(key: string, fallback: T): T {
+// Safe localStorage loader with defensive schema guard fallback
+function loadFromStorage<T>(key: string, fallback: T, validator?: (data: unknown) => data is T): T {
   try {
     const item = localStorage.getItem(key);
     if (item) {
-      return JSON.parse(item);
+      const parsed = JSON.parse(item);
+      if (validator) {
+        if (validator(parsed)) return parsed;
+        console.warn(`Data ${key} gagal lolos validasi skema integritas, memulihkan data aman.`);
+        return fallback;
+      }
+      return parsed;
     }
   } catch (e) {
     console.warn(`Gagal memuat ${key} dari localStorage:`, e);
@@ -53,26 +61,27 @@ export const App: React.FC = () => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [globalSearch, setGlobalSearch] = useState('');
+  const [showAuditModal, setShowAuditModal] = useState(false);
 
-  // Application Data States (CRUD enabled & Persisted in localStorage)
+  // Application Data States (CRUD enabled & Persisted in localStorage with schema guards)
   const [employees, setEmployees] = useState<Employee[]>(() =>
-    loadFromStorage('buspm_employees', INITIAL_EMPLOYEES)
+    loadFromStorage('buspm_employees', INITIAL_EMPLOYEES, (d): d is Employee[] => validateArray(d, isValidEmployee))
   );
   const [divisions] = useState(INITIAL_DIVISIONS);
   const [schedules, setSchedules] = useState<ScheduleItem[]>(() =>
-    loadFromStorage('buspm_schedules', INITIAL_SCHEDULES)
+    loadFromStorage('buspm_schedules', INITIAL_SCHEDULES, (d): d is ScheduleItem[] => validateArray(d, isValidSchedule))
   );
   const [projects, setProjects] = useState<ProjectItem[]>(() =>
-    loadFromStorage('buspm_projects', INITIAL_PROJECTS)
+    loadFromStorage('buspm_projects', INITIAL_PROJECTS, (d): d is ProjectItem[] => validateArray(d, isValidProject))
   );
   const [notes, setNotes] = useState<NoteItem[]>(() =>
-    loadFromStorage('buspm_notes', INITIAL_NOTES)
+    loadFromStorage('buspm_notes', INITIAL_NOTES, (d): d is NoteItem[] => validateArray(d, isValidNote))
   );
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(() =>
     loadFromStorage('buspm_announcements', INITIAL_ANNOUNCEMENTS)
   );
   const [documents, setDocuments] = useState<DocumentItem[]>(() =>
-    loadFromStorage('buspm_documents', INITIAL_DOCUMENTS)
+    loadFromStorage('buspm_documents', INITIAL_DOCUMENTS, (d): d is DocumentItem[] => validateArray(d, isValidDocument))
   );
 
   // Chat Data States (Persisted so switching modules does not erase messages)
@@ -145,34 +154,76 @@ export const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    if (currentUser) {
+      recordAuditLog({
+        eventType: 'LOGOUT',
+        severity: 'INFO',
+        actorNip: currentUser.nipNik,
+        actorName: currentUser.name,
+        details: `Pengguna ${currentUser.name} (${currentUser.jobTitle}) keluar dari sistem.`
+      });
+    }
     setCurrentUser(null);
     setActiveTab('dashboard');
-  };
-
-  const handleSwitchUser = (user: Employee) => {
-    setCurrentUser(user);
   };
 
   // CRUD Handlers for Employees
   const handleAddEmployee = (emp: Employee) => {
     setEmployees((prev) => [emp, ...prev]);
+    recordAuditLog({
+      eventType: 'DATA_CREATE',
+      severity: 'WARNING',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menambahkan pegawai baru: ${emp.name} (${emp.jobTitle}) NIP: ${emp.nipNik}`
+    });
   };
 
   const handleEditEmployee = (emp: Employee) => {
     setEmployees((prev) => prev.map((e) => (e.id === emp.id ? emp : e)));
+    recordAuditLog({
+      eventType: 'DATA_UPDATE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Memperbarui data pegawai: ${emp.name} (${emp.nipNik})`
+    });
   };
 
   const handleDeleteEmployee = (id: string) => {
+    const target = employees.find((e) => e.id === id);
     setEmployees((prev) => prev.filter((e) => e.id !== id));
+    recordAuditLog({
+      eventType: 'DATA_DELETE',
+      severity: 'WARNING',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menghapus pegawai: ${target?.name || id}`
+    });
   };
 
   // CRUD Handlers for Schedules
   const handleAddSchedule = (item: ScheduleItem) => {
     setSchedules((prev) => [item, ...prev]);
+    recordAuditLog({
+      eventType: 'DATA_CREATE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menambahkan agenda baru: ${item.title}`
+    });
   };
 
   const handleDeleteSchedule = (id: string) => {
+    const target = schedules.find((s) => s.id === id);
     setSchedules((prev) => prev.filter((s) => s.id !== id));
+    recordAuditLog({
+      eventType: 'DATA_DELETE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menghapus agenda: ${target?.title || id}`
+    });
   };
 
   // CRUD Handlers for Notes
@@ -191,6 +242,13 @@ export const App: React.FC = () => {
   // CRUD Handlers for Projects
   const handleAddProject = (item: ProjectItem) => {
     setProjects((prev) => [item, ...prev]);
+    recordAuditLog({
+      eventType: 'DATA_CREATE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menambahkan proyek strategis: ${item.title}`
+    });
   };
 
   const handleUpdateProjects = (updatedProjects: ProjectItem[]) => {
@@ -200,19 +258,49 @@ export const App: React.FC = () => {
   // CRUD Handlers for Documents
   const handleAddDocument = (item: DocumentItem) => {
     setDocuments((prev) => [item, ...prev]);
+    recordAuditLog({
+      eventType: 'DATA_CREATE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Mengunggah repositori dokumen: ${item.title} (${item.category})`
+    });
   };
 
   const handleDeleteDocument = (id: string) => {
+    const target = documents.find((d) => d.id === id);
     setDocuments((prev) => prev.filter((d) => d.id !== id));
+    recordAuditLog({
+      eventType: 'DATA_DELETE',
+      severity: 'WARNING',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menghapus repositori dokumen: ${target?.title || id}`
+    });
   };
 
   // CRUD Handlers for Announcements
   const handleAddAnnouncement = (item: AnnouncementItem) => {
     setAnnouncements((prev) => [item, ...prev]);
+    recordAuditLog({
+      eventType: 'DATA_CREATE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menerbitkan nota pengumuman: ${item.title}`
+    });
   };
 
   const handleDeleteAnnouncement = (id: string) => {
+    const target = announcements.find((a) => a.id !== id);
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    recordAuditLog({
+      eventType: 'DATA_DELETE',
+      severity: 'INFO',
+      actorNip: currentUser?.nipNik || 'SYSTEM',
+      actorName: currentUser?.name || 'User',
+      details: `Menghapus nota pengumuman: ${target?.title || id}`
+    });
   };
 
   // Chat Message Updates
@@ -246,8 +334,8 @@ export const App: React.FC = () => {
         onLogout={handleLogout}
         searchQuery={globalSearch}
         onSearchChange={setGlobalSearch}
-        onSwitchUser={handleSwitchUser}
         onNavigateTab={setActiveTab}
+        onOpenAuditLog={() => setShowAuditModal(true)}
         employees={employees}
         documents={documents}
         schedules={schedules}
@@ -374,6 +462,12 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         unreadChatCount={3}
+      />
+
+      {/* Super Admin Audit Trail Console Modal */}
+      <AuditLogModal
+        isOpen={showAuditModal}
+        onClose={() => setShowAuditModal(false)}
       />
 
     </div>

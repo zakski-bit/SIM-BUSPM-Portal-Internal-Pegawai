@@ -13,7 +13,8 @@ import {
   BookOpen,
   Target,
   FlaskConical,
-  ArrowRight
+  ArrowRight,
+  ShieldAlert
 } from 'lucide-react';
 import {
   Employee,
@@ -34,8 +35,8 @@ interface NavbarProps {
   onLogout: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  onSwitchUser: (emp: Employee) => void;
   onNavigateTab: (tab: ActiveTab) => void;
+  onOpenAuditLog?: () => void;
   employees?: Employee[];
   documents?: DocumentItem[];
   schedules?: ScheduleItem[];
@@ -51,8 +52,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   searchQuery,
   onSearchChange,
-  onSwitchUser,
   onNavigateTab,
+  onOpenAuditLog,
   employees = INITIAL_EMPLOYEES,
   documents = [],
   schedules = [],
@@ -60,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   projects = [],
   divisions = []
 }) => {
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -496,12 +497,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
             </button>
 
-            {/* User Profile Pill & Role Switcher Dropdown */}
+            {/* User Profile Pill & Secure Account Menu */}
             <div className="relative">
               <button
                 type="button"
                 id="user-profile-menu-btn"
-                onClick={() => setShowRoleSwitcher((prev) => !prev)}
+                onClick={() => setShowProfileMenu((prev) => !prev)}
                 className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700 hover:opacity-90 transition-opacity cursor-pointer text-left"
               >
                 <img
@@ -522,40 +523,68 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </button>
 
-              {/* Role Switcher Menu */}
-              {showRoleSwitcher && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl py-2 z-50 text-xs">
-                  <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Simulasi Akses Hirarki Jabatan:
+              {/* Secure Account Details Menu (No Casual Role Switching!) */}
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-xl p-4 z-50 text-xs animate-in fade-in">
+                  <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.name}
+                      className="w-10 h-10 rounded object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                    />
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {currentUser.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        NIP. {currentUser.nipNik}
+                      </div>
+                      <span className={`inline-block mt-1 text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                        isAdmin ? 'bg-bpp-marine text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {isAdmin ? 'Super Admin' : 'Pegawai Balai'}
+                      </span>
+                    </div>
                   </div>
-                  
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
-                    {employees.map((emp) => (
-                      <button
-                        key={emp.id}
-                        onClick={() => {
-                          onSwitchUser(emp);
-                          setShowRoleSwitcher(false);
-                        }}
-                        className={`w-full px-3 py-2 text-left flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${
-                          currentUser.id === emp.id ? 'bg-blue-50/70 dark:bg-blue-950/50 font-bold text-bpp-marine dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'
-                        }`}
-                      >
-                        <div className="truncate mr-2">
-                          <div className="text-xs truncate">{emp.name}</div>
-                          <div className="text-[10px] text-slate-400 truncate">{emp.jobTitle}</div>
-                        </div>
-                        <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono shrink-0 ${
-                          hasAdminAccess(emp.role) ? 'bg-bpp-marine text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                        }`}>
-                          {hasAdminAccess(emp.role) ? 'Admin' : 'Pegawai'}
-                        </span>
-                      </button>
-                    ))}
+
+                  <div className="py-2.5 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                    <div><strong>Jabatan:</strong> {currentUser.jobTitle}</div>
+                    <div><strong>Divisi:</strong> {currentUser.divisionName}</div>
+                    <div><strong>Email:</strong> {currentUser.email}</div>
+                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] pt-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Sesi Terautentikasi Kriptografis SHA-256</span>
+                    </div>
                   </div>
-                  
-                  <div className="px-3 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400">
-                    *Hanya Kepala Balai yang memiliki hak akses administrator penuh (Akses Pegawai untuk personil lainnya).
+
+                  {/* Super Admin Audit Trail Button */}
+                  {isAdmin && onOpenAuditLog && (
+                    <button
+                      type="button"
+                      id="btn-open-audit-trail"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onOpenAuditLog();
+                      }}
+                      className="w-full mt-3 py-1.5 px-3 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-bpp-marine dark:text-blue-300 font-bold rounded flex items-center justify-between text-xs transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5 text-bpp-amber" />
+                        <span>Log Audit Keamanan</span>
+                      </span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  <div className="pt-3 flex justify-between items-center text-[10px] text-slate-400">
+                    <span>Keamanan Akun SIM-BUSPM</span>
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="text-rose-600 dark:text-rose-400 hover:underline font-bold cursor-pointer"
+                    >
+                      Keluar Sesi
+                    </button>
                   </div>
                 </div>
               )}

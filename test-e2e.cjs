@@ -91,16 +91,40 @@ async function runTests() {
     console.log(`✓ Super Admin Badge: "${headerAdminBadge.trim()}" (Expected: Super Akses: Kepala Balai (Admin))`);
 
     // -------------------------------------------------------------------------
-    // 3. Test RBAC Constraint (Only Ahmad Jauhari is Admin, Zaenal & Fajar are Pegawai)
+    // 3. Test RBAC Constraint & Audit Log Modal (OWASP Hardening)
     // -------------------------------------------------------------------------
-    console.log('👉 Step 3: Testing Strict RBAC (Zaenal Arifin is Pegawai, NOT Super Admin)...');
-    // Open user switcher
+    console.log('👉 Step 3: Testing Super Admin Audit Log Console & Strict RBAC...');
+    // Open user profile menu
     await page.click('#user-profile-menu-btn');
     await sleep(400);
 
-    // Switch to Zaenal Arifin (Kasubbag Umum)
-    await clickByText(page, 'button', 'Zaenal Arifin');
+    // Verify Audit Log button is visible for Ahmad Jauhari (Super Admin)
+    const auditBtn = await page.$('#btn-open-audit-trail');
+    console.log(`✓ Super Admin has Audit Log button: ${auditBtn !== null}`);
+    await page.click('#btn-open-audit-trail');
     await sleep(600);
+
+    // Verify modal is open
+    const modalTitle = await page.evaluate(() => {
+      const h2 = document.querySelector('h2');
+      return h2 ? h2.textContent : '';
+    });
+    console.log(`✓ Audit Log Console opened: "${modalTitle?.trim()}"`);
+    await page.screenshot({ path: path.join(screenshotsDir, '03-audit-log-modal.png') });
+
+    // Close modal
+    await page.click('#audit-log-modal-close');
+    await sleep(400);
+
+    // Logout from Super Admin
+    console.log('   Logging out from Ahmad Jauhari...');
+    await page.click('button[title*="Keluar"]');
+    await sleep(600);
+
+    // Log in as Zaenal Arifin (Kasubbag Umum -> Pegawai Balai access)
+    console.log('   Logging in as Zaenal Arifin (Pegawai Balai)...');
+    await page.click('#quick-login-zaenal');
+    await sleep(800);
     await page.screenshot({ path: path.join(screenshotsDir, '03-zaenal-pegawai-mode.png') });
 
     // Check header badge for Zaenal
@@ -117,15 +141,26 @@ async function runTests() {
       const btns = Array.from(document.querySelectorAll('button'));
       return btns.some(b => b.textContent && b.textContent.includes('Tambah Pegawai'));
     });
-    console.log(`✓ Zaenal Arifin (Kasubbag Umum) can add pegawai: ${zaenalHasAddBtn} (Expected: false - Pegawai access)`);
+    console.log(`✓ Zaenal Arifin (Pegawai) can add pegawai: ${zaenalHasAddBtn} (Expected: false)`);
 
-    // Switch back to Ahmad Jauhari (Super Admin)
+    // Verify Zaenal does NOT have Audit Log button in profile menu
     await page.click('#user-profile-menu-btn');
     await sleep(400);
-    await clickByText(page, 'button', 'Ahmad Jauhari');
+    const zaenalAuditBtn = await page.$('#btn-open-audit-trail');
+    console.log(`✓ Zaenal Arifin has Audit Log button: ${zaenalAuditBtn !== null} (Expected: false)`);
+
+    // Logout Zaenal
+    await page.click('button[title*="Keluar"]');
     await sleep(600);
 
+    // Log back in as Ahmad Jauhari (Super Admin)
+    console.log('   Logging back in as Ahmad Jauhari (Super Admin)...');
+    await page.click('#quick-login-jauhari');
+    await sleep(800);
+
     // Verify Ahmad Jauhari has "Tambah Pegawai" button
+    await clickByText(page, 'button', 'Pegawai');
+    await sleep(600);
     const adminHasAddBtn = await page.evaluate(() => {
       const btns = Array.from(document.querySelectorAll('button'));
       return btns.some(b => b.textContent && b.textContent.includes('Tambah Pegawai'));

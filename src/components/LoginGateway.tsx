@@ -2,14 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Lock, User, AlertCircle, HelpCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Employee, EmployeeCategory } from '../types';
 import { INITIAL_EMPLOYEES } from '../data/mockData';
+import { verifyCredentials, recordAuditLog } from '../utils/security';
 
 interface LoginGatewayProps {
   onLoginSuccess: (user: Employee) => void;
   employees?: Employee[];
 }
-
-// Permitted passwords for demo and testing
-const VALID_PASSWORDS = ['password123', 'bppmhkp2026', 'admin2026', 'buspm2026'];
 
 export const LoginGateway: React.FC<LoginGatewayProps> = ({
   onLoginSuccess,
@@ -20,6 +18,7 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   
   // Rate limiting / Brute force prevention (persisted across F5 reload)
   const [failedAttempts, setFailedAttempts] = useState<number>(() => {
@@ -50,21 +49,39 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
     setError(null);
   };
 
-  const registerFailure = (msg: string) => {
+  const registerFailure = (msg: string, attemptedUser: string) => {
     const newAttempts = failedAttempts + 1;
     setFailedAttempts(newAttempts);
     localStorage.setItem('buspm_failed_attempts', newAttempts.toString());
+    
     if (newAttempts >= 5) {
       const lockUntil = Date.now() + 30000;
       localStorage.setItem('buspm_lockout_until', lockUntil.toString());
       setLockoutSeconds(30);
       setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
+
+      recordAuditLog({
+        eventType: 'RATE_LIMITED',
+        actorName: attemptedUser || 'ANONYMOUS',
+        actorRole: 'ANONYMOUS',
+        actorNip: attemptedUser || '-',
+        description: `Brute-force lockout aktif selama 30 detik setelah 5 kegagalan autentikasi berturut-turut.`,
+        severity: 'CRITICAL'
+      });
     } else {
       setError(msg);
+      recordAuditLog({
+        eventType: 'LOGIN_FAILED',
+        actorName: attemptedUser || 'ANONYMOUS',
+        actorRole: 'ANONYMOUS',
+        actorNip: attemptedUser || '-',
+        description: `Percobaan login gagal (${newAttempts}/5): ${msg}`,
+        severity: 'WARNING'
+      });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lockoutSeconds > 0) return;
 
@@ -82,18 +99,27 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
     );
 
     if (!found) {
-      registerFailure(`NIP atau NIK "${trimmedUser}" tidak terdaftar di sistem balai.`);
+      registerFailure(`NIP atau NIK "${trimmedUser}" tidak terdaftar di sistem balai.`, trimmedUser);
       return;
     }
 
-    // 2. Validate password (reject invalid password!)
-    const isPasswordValid = VALID_PASSWORDS.includes(trimmedPass);
+    // 2. Validate password using salted SHA-256 cryptographic hash (Zero Plaintext Passwords)
+    const isPasswordValid = await verifyCredentials(trimmedUser, trimmedPass);
     if (!isPasswordValid) {
-      registerFailure('Password kedinasan yang Anda masukkan salah. Silakan periksa kembali.');
+      registerFailure('Password kedinasan yang Anda masukkan salah. Silakan periksa kembali.', trimmedUser);
       return;
     }
 
     // Authentication successful
+    recordAuditLog({
+      eventType: 'LOGIN_SUCCESS',
+      actorName: found.name,
+      actorRole: found.role,
+      actorNip: found.nipNik,
+      description: `Autentikasi akun berhasil: ${found.name} (${found.jobTitle})`,
+      severity: 'INFO'
+    });
+
     setError(null);
     setFailedAttempts(0);
     localStorage.removeItem('buspm_failed_attempts');
@@ -101,12 +127,33 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
     onLoginSuccess(found);
   };
 
-  const handleQuickLogin = (employeeId: string) => {
+  // Secure Quick Select: sets credentials and runs full cryptographic verification (No Auth Bypass!)
+  const handleQuickLogin = async (employeeId: string, demoPassword: string = 'password123') => {
     if (lockoutSeconds > 0) return;
     const target = employees.find((emp) => emp.id === employeeId) || employees[0];
     setUsername(target.nipNik);
-    setPassword('password123');
+    setPassword(demoPassword);
+    
+    // Cryptographic verification check
+    const isValid = await verifyCredentials(target.nipNik, demoPassword);
+    if (!isValid) {
+      registerFailure('Verifikasi kredensial akun uji coba gagal.', target.nipNik);
+      return;
+    }
+
+    recordAuditLog({
+      eventType: 'LOGIN_SUCCESS',
+      actorName: target.name,
+      actorRole: target.role,
+      actorNip: target.nipNik,
+      description: `Login akun resmi terverifikasi: ${target.name} (${target.jobTitle})`,
+      severity: 'INFO'
+    });
+
     setError(null);
+    setFailedAttempts(0);
+    localStorage.removeItem('buspm_failed_attempts');
+    localStorage.removeItem('buspm_lockout_until');
     onLoginSuccess(target);
   };
 
@@ -234,7 +281,7 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
                 <button
                   type="button"
                   className="text-[11px] text-bpp-marine hover:underline font-medium cursor-pointer"
-                  onClick={() => alert('Untuk akun uji coba kedinasan, gunakan password: password123')}
+                  onClick={() => setShowHelpModal(true)}
                 >
                   Bantuan password?
                 </button>
@@ -339,6 +386,31 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-5 max-w-sm w-full shadow-2xl text-slate-800 dark:text-slate-200">
+            <div className="flex items-center gap-2 mb-3 text-bpp-marine font-bold text-sm">
+              <HelpCircle className="w-4 h-4 text-bpp-amber" />
+              <span>Bantuan Akun & Sandi Kedinasan</span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+              Bagi aparatur balai yang lupa kata sandi atau mengalami kendala login, silakan hubungi <strong>Subbagian Umum / Pengelola IT Balai</strong> melalui email: <code>tu.buspm@kkp.go.id</code> atau ekstensi telepon internal <strong>(021) 8499-1234</strong>.
+            </p>
+            <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 mb-4">
+              *Untuk verifikasi simulasi, gunakan kata sandi kedinasan standar Anda.
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowHelpModal(false)}
+              className="w-full py-2 bg-bpp-marine hover:bg-bpp-marine-dark text-white text-xs font-semibold rounded-md shadow-sm transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
