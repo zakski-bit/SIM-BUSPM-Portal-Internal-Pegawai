@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Download, Search, ShieldCheck, Plus, Trash2, CheckCircle2 } from 'lucide-react';
-import { DocumentItem } from '../../types';
+import { DocumentItem, Employee, hasAdminAccess } from '../../types';
 
 interface DocsViewProps {
   documents: DocumentItem[];
+  currentUser?: Employee;
   onAddDocument?: (doc: DocumentItem) => void;
   onDeleteDocument?: (id: string) => void;
   searchFilter?: string;
@@ -11,10 +12,12 @@ interface DocsViewProps {
 
 export const DocsView: React.FC<DocsViewProps> = ({
   documents,
+  currentUser,
   onAddDocument,
   onDeleteDocument,
   searchFilter = ''
 }) => {
+  const isAdmin = currentUser ? hasAdminAccess(currentUser.role) : false;
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState(searchFilter);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,18 +40,101 @@ export const DocsView: React.FC<DocsViewProps> = ({
   });
 
   const handleDownload = (doc: DocumentItem) => {
-    // Generate simulated text download
+    let blob: Blob;
+    let fileName = `${doc.code}.${doc.format.toLowerCase()}`;
+
+    if (doc.format === 'DOCX') {
+      const docHtml = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset='utf-8'>
+          <title>${doc.title}</title>
+          <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; margin: 2.5cm; color: #111; }
+            .header { text-align: center; border-bottom: 3px double #003366; padding-bottom: 12px; margin-bottom: 24px; }
+            .header h2 { font-size: 13pt; margin: 0; color: #003366; text-transform: uppercase; }
+            .header h3 { font-size: 12pt; margin: 4px 0; color: #1a365d; text-transform: uppercase; }
+            .header p { font-size: 9pt; margin: 0; color: #555; }
+            .meta-box { border: 1px solid #cbd5e1; background: #f8fafc; padding: 12px 16px; margin: 20px 0; border-radius: 4px; }
+            .content-section { margin-top: 24px; font-size: 11pt; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>Kementerian Kelautan dan Perikanan Republik Indonesia</h2>
+            <h3>Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan</h3>
+            <p>Balai Uji Standar PPMHKP Jakarta • Jl. Raya Setu No. 1, Cipayung, Jakarta Timur 13880</p>
+          </div>
+          <div class="meta-box">
+            <h3 style="margin-top:0;">DOKUMEN RESMI: ${doc.title}</h3>
+            <p><strong>Kode Dokumen:</strong> ${doc.code}</p>
+            <p><strong>Kategori Mutu:</strong> ${doc.category}</p>
+            <p><strong>Format & Ukuran:</strong> ${doc.format} (${doc.fileSize})</p>
+            <p><strong>Tanggal Pengesahan:</strong> ${doc.uploadedAt}</p>
+          </div>
+          <div class="content-section">
+            <p>Dokumen ini merupakan salinan sah digital standar operasional dan acuan mutu kerja Balai Uji Standar PPMHKP Jakarta.</p>
+            <p>Seluruh personil laboratorium dan pemangku kepentingan wajib berpedoman pada ketentuan standar yang tertuang dalam dokumen ini.</p>
+          </div>
+        </body>
+        </html>
+      `;
+      blob = new Blob(['\ufeff', docHtml], { type: 'application/msword;charset=utf-8' });
+      fileName = `${doc.code}.doc`;
+    } else {
+      const printableHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${doc.title} - SIM-BUSPM</title>
+          <style>
+            @media print { body { margin: 1.5cm; } }
+            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px auto; max-width: 800px; line-height: 1.6; color: #1e293b; padding: 20px; }
+            .header { text-align: center; border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 25px; }
+            .header h1 { font-size: 16px; color: #0369a1; margin: 0; text-transform: uppercase; }
+            .header h2 { font-size: 14px; margin: 5px 0; color: #0f172a; }
+            .header p { font-size: 12px; color: #64748b; margin: 0; }
+            .doc-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; background: #f8fafc; margin-bottom: 20px; }
+            .doc-code { display: inline-block; background: #0284c7; color: #fff; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-bottom: 10px; }
+            .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 11px; color: #94a3b8; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Kementerian Kelautan dan Perikanan Republik Indonesia</h1>
+            <h2>Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan</h2>
+            <p>Balai Uji Standar PPMHKP Jakarta • Dokumen Mutu Terakreditasi</p>
+          </div>
+          <div class="doc-card">
+            <span class="doc-code">${doc.code}</span>
+            <h3 style="margin: 0 0 10px 0; color: #0f172a;">${doc.title}</h3>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Kategori Dokumen:</strong> ${doc.category}</p>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Format Dokumen:</strong> ${doc.format} (${doc.fileSize})</p>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Tanggal Rilis:</strong> ${doc.uploadedAt}</p>
+          </div>
+          <div>
+            <h4>Deskripsi & Ruang Lingkup Standar</h4>
+            <p>Dokumen ini mengatur tata laksana standar pengujian laboratorium dan administrasi operasional di lingkungan Balai Uji Standar Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan (BUSPPMHKP) Jakarta.</p>
+          </div>
+          <div class="footer">
+            Dokumen Sah Digital • SIM-BUSPM Kementerian Kelautan dan Perikanan RI
+          </div>
+        </body>
+        </html>
+      `;
+      blob = new Blob([printableHtml], { type: 'text/html;charset=utf-8' });
+      fileName = `${doc.code}.html`;
+    }
+
     const element = document.createElement('a');
-    const file = new Blob([
-      `KEMENTERIAN KELAUTAN DAN PERIKANAN RI\nBALAI UJI STANDAR PPMHKP JAKARTA\n\nARSIP DOKUMEN MUTU & REGULASI RESMI\nKode: ${doc.code}\nJudul: ${doc.title}\nKategori: ${doc.category}\nFormat: ${doc.format}\nUkuran: ${doc.fileSize}\nTanggal Rilis: ${doc.uploadedAt}\n\nDokumen ini merupakan salinan sah digital standar operasional Balai Uji Standar PPMHKP Cipayung, Jakarta Timur.`
-    ], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `${doc.code}.${doc.format.toLowerCase()}`;
+    element.href = URL.createObjectURL(blob);
+    element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
 
-    setDownloadNotification(`Dokumen "${doc.title}" berhasil diunduh.`);
+    setDownloadNotification(`Dokumen "${doc.title}" berhasil diunduh (${fileName}).`);
     setTimeout(() => setDownloadNotification(null), 3500);
   };
 
@@ -199,13 +285,15 @@ export const DocsView: React.FC<DocsViewProps> = ({
                         <Download className="w-3 h-3" />
                         <span>Unduh</span>
                       </button>
-                      <button
-                        onClick={() => handleDelete(doc.id, doc.title)}
-                        title="Hapus Dokumen"
-                        className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(doc.id, doc.title)}
+                          title="Hapus Dokumen (Super Admin)"
+                          className="p-1 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -397,3 +397,69 @@ export const INITIAL_DOCUMENTS: DocumentItem[] = [
     downloadUrl: '#'
   }
 ];
+
+export const INITIAL_CHANNEL_MESSAGES: Record<string, ChatMessage[]> = {
+  umum: INITIAL_CHAT_MESSAGES,
+  kimia: [
+    {
+      id: 'msg-k-1',
+      senderName: 'Sigit Hendra Irawan P., S.Pi',
+      senderAvatar: '/bagan/pejabat-sigit-hendra.jpg',
+      senderCategory: 'ASN',
+      text: 'Kurva kalibrasi instrumen LC-MS/MS untuk residu antibiotik sudah selesai divalidasi rekan-rekan analis kimia.',
+      timestamp: '09:10'
+    },
+    {
+      id: 'msg-k-2',
+      senderName: 'Eka Putri Rahayu, S.Si.',
+      senderAvatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=200&h=200&q=80',
+      senderCategory: 'ASN',
+      text: 'Baik Pak Koordinator, saya sedang menyiapkan sampel udang ekspor untuk running kedua.',
+      timestamp: '09:15'
+    }
+  ],
+  mikro: [
+    {
+      id: 'msg-m-1',
+      senderName: 'Siti Rahmawati, S.Si., M.Biotech.',
+      senderAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80',
+      senderCategory: 'ASN',
+      text: 'Pengujian PCR deteksi Salmonella dan Vibrio pada bahan acuan batch 3 sedang tahap inkubasi.',
+      timestamp: '08:45'
+    }
+  ],
+  'project-web': [
+    {
+      id: 'msg-pw-1',
+      senderName: 'Fajar Ramadhan, S.Kom.',
+      senderAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&h=200&q=80',
+      senderCategory: 'NON_ASN',
+      text: 'Sistem SIM-BUSPM sudah menambahkan fitur Chat Pribadi (DM) dan pembaruan visual institusi.',
+      timestamp: '10:00'
+    }
+  ]
+};
+
+export const INITIAL_DIRECT_MESSAGES: Record<string, ChatMessage[]> = {
+  'emp-1': [
+    {
+      id: 'dm-1-1',
+      senderName: 'Ahmad Jauhari, S.St.Pi., M.Sc.',
+      senderAvatar: '/bagan/pejabat-ahmad-jauhari.jpg',
+      senderCategory: 'ASN',
+      text: 'Selamat bertugas. Mohon laporan berkala hasil uji surveilen komoditas perikanan disampaikan sebelum rapat pimpinan.',
+      timestamp: 'Kemarin, 16:30'
+    }
+  ],
+  'emp-2': [
+    {
+      id: 'dm-2-1',
+      senderName: 'Zaenal Arifin, A.Md',
+      senderAvatar: '/bagan/pejabat-zaenal-arifin.jpg',
+      senderCategory: 'ASN',
+      text: 'Halo, terkait urusan administrasi kepegawaian atau sarana pengujian lab, silakan koordinasikan lewat sini ya.',
+      timestamp: '09:00'
+    }
+  ]
+};
+

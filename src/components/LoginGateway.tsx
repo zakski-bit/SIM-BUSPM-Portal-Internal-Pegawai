@@ -1,17 +1,36 @@
-import React, { useState } from 'react';
-import { ArrowRight, Lock, User, AlertCircle, HelpCircle, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Lock, User, AlertCircle, HelpCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { Employee, EmployeeCategory } from '../types';
 import { INITIAL_EMPLOYEES } from '../data/mockData';
 
 interface LoginGatewayProps {
   onLoginSuccess: (user: Employee) => void;
+  employees?: Employee[];
 }
 
-export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) => {
+// Permitted passwords for demo and testing
+const VALID_PASSWORDS = ['password123', 'bppmhkp2026', 'admin2026', 'buspm2026'];
+
+export const LoginGateway: React.FC<LoginGatewayProps> = ({
+  onLoginSuccess,
+  employees = INITIAL_EMPLOYEES
+}) => {
   const [category, setCategory] = useState<EmployeeCategory>('ASN');
   const [username, setUsername] = useState('198212312006041003'); // Ahmad Jauhari default
   const [password, setPassword] = useState('password123');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Rate limiting / Brute force prevention
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  useEffect(() => {
+    if (lockoutSeconds > 0) {
+      const timer = setTimeout(() => setLockoutSeconds(lockoutSeconds - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [lockoutSeconds]);
 
   const handleCategoryChange = (newCat: EmployeeCategory) => {
     setCategory(newCat);
@@ -25,27 +44,59 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
+    if (lockoutSeconds > 0) return;
+
+    const trimmedUser = username.trim();
+    const trimmedPass = password.trim();
+
+    if (!trimmedUser || !trimmedPass) {
       setError('Mohon masukkan NIP/NIK dan password kedinasan Anda.');
       return;
     }
 
-    const found = INITIAL_EMPLOYEES.find(
-      (emp) => emp.nipNik.toLowerCase() === username.trim().toLowerCase()
+    // 1. Check if user exists in the system
+    const found = employees.find(
+      (emp) => emp.nipNik.toLowerCase() === trimmedUser.toLowerCase()
     );
 
-    if (found) {
-      setError(null);
-      onLoginSuccess(found);
-    } else {
-      const fallback = INITIAL_EMPLOYEES.find((emp) => emp.category === category) || INITIAL_EMPLOYEES[0];
-      setError(null);
-      onLoginSuccess(fallback);
+    if (!found) {
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLockoutSeconds(30);
+        setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
+      } else {
+        setError(`NIP atau NIK "${trimmedUser}" tidak terdaftar di sistem balai.`);
+      }
+      return;
     }
+
+    // 2. Validate password (reject invalid password!)
+    const isPasswordValid = VALID_PASSWORDS.includes(trimmedPass);
+    if (!isPasswordValid) {
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLockoutSeconds(30);
+        setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
+      } else {
+        setError('Password kedinasan yang Anda masukkan salah. Silakan periksa kembali.');
+      }
+      return;
+    }
+
+    // Authentication successful
+    setError(null);
+    setFailedAttempts(0);
+    onLoginSuccess(found);
   };
 
   const handleQuickLogin = (employeeId: string) => {
-    const target = INITIAL_EMPLOYEES.find((emp) => emp.id === employeeId) || INITIAL_EMPLOYEES[0];
+    if (lockoutSeconds > 0) return;
+    const target = employees.find((emp) => emp.id === employeeId) || employees[0];
+    setUsername(target.nipNik);
+    setPassword('password123');
+    setError(null);
     onLoginSuccess(target);
   };
 
@@ -130,16 +181,19 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700 flex items-start gap-2">
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2 animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Form Fields */}
+          {/* Form Fields with accessibility id and htmlFor */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              <label
+                htmlFor="login-username"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+              >
                 {category === 'ASN' ? 'NIP (Nomor Induk Pegawai)' : 'NIK / ID PPNPN Kedinasan'}
               </label>
               <div className="relative">
@@ -147,6 +201,8 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
                   <User className="w-4 h-4" />
                 </div>
                 <input
+                  id="login-username"
+                  name="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -159,15 +215,18 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="login-password"
+                  className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
                   Password Akun Kedinasan
                 </label>
                 <button
                   type="button"
-                  className="text-[11px] text-bpp-marine hover:underline font-medium"
-                  onClick={() => alert('Untuk bantuan reset kata sandi, silakan hubungi Subbagian Tata Usaha BUSPM.')}
+                  className="text-[11px] text-bpp-marine hover:underline font-medium cursor-pointer"
+                  onClick={() => alert('Untuk akun uji coba kedinasan, gunakan password: password123')}
                 >
-                  Lupa kata sandi?
+                  Bantuan password?
                 </button>
               </div>
               <div className="relative">
@@ -175,22 +234,41 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-bpp-marine focus:border-bpp-marine"
+                  className="w-full pl-9 pr-10 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-bpp-marine focus:border-bpp-marine"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             {/* Amber Button styled like BPP MHKP portal button */}
             <button
               type="submit"
-              className="w-full mt-2 py-2.5 px-4 bg-bpp-amber hover:bg-bpp-amber-hover text-white text-xs font-bold rounded-md shadow-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
+              disabled={lockoutSeconds > 0}
+              className={`w-full mt-2 py-2.5 px-4 text-white text-xs font-bold rounded-md shadow-sm transition-all duration-150 flex items-center justify-center gap-2 ${
+                lockoutSeconds > 0
+                  ? 'bg-slate-400 cursor-not-allowed'
+                  : 'bg-bpp-amber hover:bg-bpp-amber-hover cursor-pointer'
+              }`}
             >
-              <span>Masuk Portal SIM-BUSPM</span>
+              <span>
+                {lockoutSeconds > 0
+                  ? `Terkunci (${lockoutSeconds} detik)`
+                  : 'Masuk Portal SIM-BUSPM'}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -203,6 +281,7 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
             <div className="space-y-1.5">
               <button
                 type="button"
+                id="quick-login-jauhari"
                 onClick={() => handleQuickLogin('emp-1')}
                 className="w-full py-1.5 px-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 text-bpp-marine dark:text-blue-300 text-[11px] font-bold border border-blue-200 dark:border-blue-800 rounded transition-colors text-left flex items-center justify-between cursor-pointer"
               >
@@ -212,20 +291,22 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
               
               <button
                 type="button"
+                id="quick-login-zaenal"
                 onClick={() => handleQuickLogin('emp-2')}
                 className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700 rounded transition-colors text-left flex items-center justify-between cursor-pointer"
               >
                 <span>Zaenal Arifin, A.Md (Kasubbag Umum)</span>
-                <span className="text-[10px] bg-slate-600 text-white px-1.5 py-0.2 rounded font-mono">Admin Umum</span>
+                <span className="text-[10px] bg-slate-600 text-white px-1.5 py-0.2 rounded font-mono">Pegawai</span>
               </button>
 
               <button
                 type="button"
+                id="quick-login-fajar"
                 onClick={() => handleQuickLogin('emp-7')}
                 className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold border border-slate-200 dark:border-slate-700 rounded transition-colors text-left flex items-center justify-between cursor-pointer"
               >
                 <span>Fajar Ramadhan, S.Kom. (IT / PPNPN)</span>
-                <span className="text-[10px] bg-amber-600 text-white px-1.5 py-0.2 rounded font-mono">Pegawai</span>
+                <span className="text-[10px] bg-slate-600 text-white px-1.5 py-0.2 rounded font-mono">Pegawai</span>
               </button>
             </div>
           </div>
@@ -244,7 +325,7 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({ onLoginSuccess }) =>
         <div className="mt-3 text-center">
           <p className="text-[11px] text-white/80 drop-shadow-sm flex items-center justify-center gap-1 font-medium">
             <HelpCircle className="w-3.5 h-3.5" />
-            <span>Subbagian Tata Usaha BUSPM Cipayung Jakarta Timur</span>
+            <span>Subbagian Umum Balai Uji Standar PPMHKP Cipayung Jakarta</span>
           </p>
         </div>
       </div>

@@ -95,11 +95,11 @@ export interface DocumentItem {
   downloadUrl: string;
 }
 
-// Access Control Helpers
+// Access Control Helpers: Strictly Ahmad Jauhari (Kepala Balai) is Super Admin, all others have standard employee access
 export const hasAdminAccess = (role: UserRole): boolean => {
-  return role === 'KEPALA_BALAI' || role === 'KTU';
+  return role === 'KEPALA_BALAI';
 };
 
 export const hasKatimAccess = (role: UserRole): boolean => {
-  return role === 'KEPALA_BALAI' || role === 'KTU' || role === 'KATIM';
+  return role === 'KEPALA_BALAI' || role === 'KATIM';
 };

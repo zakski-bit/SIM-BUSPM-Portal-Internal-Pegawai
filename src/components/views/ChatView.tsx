@@ -6,13 +6,19 @@ import { INITIAL_EMPLOYEES } from '../../data/mockData';
 interface ChatViewProps {
   currentUser: Employee;
   employees?: Employee[];
-  initialMessages: ChatMessage[];
+  channelMessages: Record<string, ChatMessage[]>;
+  directMessages: Record<string, ChatMessage[]>;
+  onUpdateChannelMessages: (channelId: string, msg: ChatMessage) => void;
+  onUpdateDirectMessages: (recipientId: string, msg: ChatMessage) => void;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
   currentUser,
   employees = INITIAL_EMPLOYEES,
-  initialMessages
+  channelMessages,
+  directMessages,
+  onUpdateChannelMessages,
+  onUpdateDirectMessages
 }) => {
   // Mode: 'CHANNEL' or 'DIRECT'
   const [chatMode, setChatMode] = useState<'CHANNEL' | 'DIRECT'>('CHANNEL');
@@ -21,74 +27,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
   
   // Search query to find employees for Direct Message
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
-
-  // Channel Messages Store
-  const [channelMessages, setChannelMessages] = useState<Record<string, ChatMessage[]>>({
-    umum: initialMessages,
-    kimia: [
-      {
-        id: 'msg-k-1',
-        senderName: 'Dr. Dian Pratama, M.Si.',
-        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&h=200&q=80',
-        senderCategory: 'ASN',
-        text: 'Kurva kalibrasi instrumen LC-MS/MS untuk residu antibiotik sudah selesai divalidasi rekan-rekan analis kimia.',
-        timestamp: '09:10'
-      },
-      {
-        id: 'msg-k-2',
-        senderName: 'Eka Putri Rahayu, S.Si.',
-        senderAvatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=200&h=200&q=80',
-        senderCategory: 'ASN',
-        text: 'Baik Pak Koordinator, saya sedang menyiapkan sampel udang ekspor untuk running kedua.',
-        timestamp: '09:15'
-      }
-    ],
-    mikro: [
-      {
-        id: 'msg-m-1',
-        senderName: 'Siti Rahmawati, S.Si., M.Biotech.',
-        senderAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=80',
-        senderCategory: 'ASN',
-        text: 'Pengujian PCR deteksi Salmonella dan Vibrio pada bahan acuan batch 3 sedang tahap inkubasi.',
-        timestamp: '08:45'
-      }
-    ],
-    'project-web': [
-      {
-        id: 'msg-pw-1',
-        senderName: 'Fajar Ramadhan, S.Kom.',
-        senderAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&h=200&q=80',
-        senderCategory: 'NON_ASN',
-        text: 'Sistem SIM-BUSPM sudah menambahkan fitur Chat Pribadi (DM) dan pembaruan visual institusi.',
-        timestamp: '10:00'
-      }
-    ]
-  });
-
-  // Direct Messages Store (Indexed by recipient user id)
-  const [directMessages, setDirectMessages] = useState<Record<string, ChatMessage[]>>({
-    'emp-1': [ // Ahmad Jauhari (Kepala Balai)
-      {
-        id: 'dm-1-1',
-        senderName: 'Ahmad Jauhari, S.St.Pi., M.Sc.',
-        senderAvatar: '/bagan/pejabat-ahmad-jauhari.jpg',
-        senderCategory: 'ASN',
-        text: 'Selamat bertugas. Mohon laporan berkala hasil uji surveilen komoditas perikanan disampaikan sebelum rapat pimpinan.',
-        timestamp: 'Kemarin, 16:30'
-      }
-    ],
-    'emp-2': [ // Zaenal Arifin (Kasubbag Umum)
-      {
-        id: 'dm-2-1',
-        senderName: 'Zaenal Arifin, A.Md',
-        senderAvatar: '/bagan/pejabat-zaenal-arifin.jpg',
-        senderCategory: 'ASN',
-        text: 'Halo, terkait urusan administrasi kepegawaian atau sarana pengujian lab, silakan koordinasikan lewat sini ya.',
-        timestamp: '09:00'
-      }
-    ]
-  });
-
   const [inputText, setInputText] = useState('');
 
   const channels = [
@@ -123,15 +61,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
     };
 
     if (chatMode === 'CHANNEL') {
-      setChannelMessages((prev) => ({
-        ...prev,
-        [activeChannelId]: [...(prev[activeChannelId] || []), newMsg]
-      }));
+      onUpdateChannelMessages(activeChannelId, newMsg);
     } else {
-      setDirectMessages((prev) => ({
-        ...prev,
-        [activeDirectUserId]: [...(prev[activeDirectUserId] || []), newMsg]
-      }));
+      onUpdateDirectMessages(activeDirectUserId, newMsg);
     }
 
     setInputText('');
@@ -408,6 +340,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
           {/* Input Box */}
           <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-2">
             <input
+              id="chat-message-input"
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}

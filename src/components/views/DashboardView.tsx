@@ -38,7 +38,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             SIM-BUSPM — Sistem Informasi Manajemen Operasional Balai
           </h1>
           <p className="text-xs text-blue-100 mt-1 max-w-2xl leading-relaxed">
-            Selamat datang, <strong className="text-white underline">{currentUser.name}</strong> ({currentUser.jobTitle}). Anda login dengan hak akses {isAdmin ? 'Pimpinan / KTU (Super Admin)' : 'Personil Laboratorium'}.
+            Selamat datang, <strong className="text-white underline">{currentUser.name}</strong> ({currentUser.jobTitle}). Anda login dengan hak akses {isAdmin ? 'Kepala Balai (Super Admin)' : 'Pegawai Balai'}.
           </p>
         </div>
 

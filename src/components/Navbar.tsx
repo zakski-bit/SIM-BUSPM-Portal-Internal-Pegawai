@@ -251,10 +251,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedEmployees.slice(0, 4).map((emp) => (
-                            <div
+                            <button
+                              type="button"
                               key={emp.id}
                               onClick={() => handleSelectResult('pegawai')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2.5 truncate">
                                 <img
@@ -274,7 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950 text-bpp-marine dark:text-blue-300 font-mono rounded shrink-0">
                                 {emp.category}
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -289,10 +290,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedDocs.slice(0, 3).map((doc) => (
-                            <div
+                            <button
+                              type="button"
                               key={doc.id}
                               onClick={() => handleSelectResult('docs')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <FileText className="w-4 h-4 text-bpp-amber shrink-0" />
@@ -308,7 +310,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] font-mono px-1.5 py-0.2 bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300">
                                 {doc.format}
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -323,10 +325,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedSchedules.map((sch) => (
-                            <div
+                            <button
+                              type="button"
                               key={sch.id}
                               onClick={() => handleSelectResult('jadwal')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <Calendar className="w-4 h-4 text-bpp-marine shrink-0" />
@@ -342,7 +345,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 dark:bg-slate-800 font-mono rounded text-slate-600">
                                 {sch.dateStr}
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -357,10 +360,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedNotes.map((note) => (
-                            <div
+                            <button
+                              type="button"
                               key={note.id}
                               onClick={() => handleSelectResult('catatan')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <BookOpen className="w-4 h-4 text-purple-600 shrink-0" />
@@ -374,7 +378,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 </div>
                               </div>
                               <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -389,10 +393,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedProjects.map((proj) => (
-                            <div
+                            <button
+                              type="button"
                               key={proj.id}
                               onClick={() => handleSelectResult('project')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <Target className="w-4 h-4 text-cyan-600 shrink-0" />
@@ -408,7 +413,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] font-mono font-bold text-bpp-marine">
                                 {proj.progressPercent}%
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -423,10 +428,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         </div>
                         <div className="space-y-1">
                           {matchedDivisions.map((div) => (
-                            <div
+                            <button
+                              type="button"
                               key={div.id}
                               onClick={() => handleSelectResult('divisi')}
-                              className="p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
+                              className="w-full text-left p-2 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-md flex items-center justify-between cursor-pointer transition-colors"
                             >
                               <div className="flex items-center gap-2 truncate">
                                 <FlaskConical className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -442,7 +448,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                               <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300 rounded">
                                 {div.code}
                               </span>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -461,6 +467,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setShowMobileSearch((prev) => !prev)}
+              aria-label="Buka pencarian global"
               className="md:hidden p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-50 dark:bg-slate-800 rounded-md cursor-pointer"
             >
               <Search className="w-4 h-4" />
@@ -470,12 +477,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isAdmin ? (
               <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-bpp-marine dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded text-[11px] font-bold">
                 <ShieldCheck className="w-3.5 h-3.5 text-bpp-amber" />
-                <span>Super Akses: Pimpinan / KTU</span>
+                <span>Super Akses: Kepala Balai (Admin)</span>
               </span>
             ) : (
               <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded text-[11px] font-medium">
                 <UserCheck className="w-3.5 h-3.5" />
-                <span>Akses: Personil Lab</span>
+                <span>Akses: Pegawai Balai</span>
               </span>
             )}
 
@@ -493,6 +500,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative">
               <button
                 type="button"
+                id="user-profile-menu-btn"
                 onClick={() => setShowRoleSwitcher((prev) => !prev)}
                 className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700 hover:opacity-90 transition-opacity cursor-pointer text-left"
               >
@@ -547,7 +555,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                   
                   <div className="px-3 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400">
-                    *Pimpinan Balai & Subbag Umum dapat melihat serta mengelola seluruh data pegawai.
+                    *Hanya Kepala Balai yang memiliki hak akses administrator penuh (Akses Pegawai untuk personil lainnya).
                   </div>
                 </div>
               )}

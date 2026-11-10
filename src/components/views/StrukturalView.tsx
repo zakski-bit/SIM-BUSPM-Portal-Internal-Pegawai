@@ -130,48 +130,102 @@ export const StrukturalView: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const handleDownloadDoc = () => {
-    const textContent = `KEMENTERIAN KELAUTAN DAN PERIKANAN REPUBLIK INDONESIA
-BADAN PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN
-BALAI UJI STANDAR PENGENDALIAN DAN PENGAWASAN MUTU HASIL KELAUTAN DAN PERIKANAN JAKARTA
-Alamat: Jl. Raya Setu No. 1, Cipayung, Jakarta Timur 13880
+    const docHtml = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>Surat Keputusan Struktur Organisasi BUSPM 2026</title>
+        <style>
+          body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; margin: 2.5cm; color: #111; }
+          .header { text-align: center; border-bottom: 3px double #003366; padding-bottom: 12px; margin-bottom: 24px; }
+          .header h2 { font-size: 13pt; margin: 0; color: #003366; text-transform: uppercase; letter-spacing: 0.5px; }
+          .header h3 { font-size: 12pt; margin: 4px 0; color: #1a365d; text-transform: uppercase; }
+          .header p { font-size: 9pt; margin: 0; color: #555; }
+          .title-area { text-align: center; margin: 25px 0 20px 0; }
+          .title-area h4 { font-size: 12pt; margin: 0; text-decoration: underline; text-transform: uppercase; }
+          .title-area .nomor { font-size: 10pt; margin: 4px 0; font-family: 'Courier New', monospace; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }
+          th, td { border: 1px solid #999; padding: 8px 12px; font-size: 10pt; text-align: left; vertical-align: top; }
+          th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
+          .legal-box { border-left: 3px solid #003366; padding-left: 10px; margin: 15px 0; background-color: #f8fafc; }
+          .sign-area { margin-top: 40px; float: right; width: 280px; text-align: center; font-size: 10pt; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2>Kementerian Kelautan dan Perikanan Republik Indonesia</h2>
+          <h3>Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan</h3>
+          <p>Balai Uji Standar PPMHKP Jakarta • Jl. Raya Setu No. 1, Cipayung, Jakarta Timur 13880</p>
+        </div>
 
-SURAT KEPUTUSAN KEPALA BADAN
-NOMOR: SK.084/KEP-BPPMHKP/2026
-TENTANG
-PENETAPAN STRUKTUR ORGANISASI DAN PEJABAT STRUKTURAL / FUNGSIONAL
-BALAI UJI STANDAR PPMHKP JAKARTA TAHUN 2026
+        <div class="title-area">
+          <h4>Keputusan Kepala Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan</h4>
+          <div class="nomor">NOMOR: SK.084/KEP-BPPMHKP/2026</div>
+          <p><strong>TENTANG: PENETAPAN STRUKTUR ORGANISASI DAN PEJABAT STRUKTURAL / FUNGSIONAL TAHUN 2026</strong></p>
+        </div>
 
-MEMUTUSKAN DAN MENETAPKAN:
+        <p>Menimbang dan mengingat ketentuan perundang-undangan di bidang kelautan dan perikanan serta standardisasi pengujian laboratorium nasional, dengan ini menetapkan:</p>
 
-1. PEJABAT ADMINISTRATOR / KEPALA BALAI:
-   Nama: Ahmad Jauhari, S.St.Pi., M.Sc.
-   NIP: 198212312006041003
-   Jabatan: Kepala Balai Uji Standar PPMHKP Jakarta
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 5%;">No</th>
+              <th style="width: 30%;">Jabatan Kedinasan</th>
+              <th style="width: 35%;">Nama Pejabat</th>
+              <th style="width: 30%;">NIP Kedinasan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><strong>Pejabat Administrator / Kepala Balai</strong></td>
+              <td>Ahmad Jauhari, S.St.Pi., M.Sc.</td>
+              <td>198212312006041003</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><strong>Pejabat Pengawas / Kepala Subbagian Umum</strong></td>
+              <td>Zaenal Arifin, A.Md</td>
+              <td>197905182003121002</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><strong>Ketua Tim Kerja Pengembangan Teknik & Metode Uji Kesehatan Ikan</strong></td>
+              <td>Dini Fajriyani, S.Pi., M.Pi</td>
+              <td>198704122011012001</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><strong>Koordinator Fungsional</strong></td>
+              <td>Iswadi Idris, S.Si</td>
+              <td>198302192009011002</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><strong>Ketua Tim Kerja Penerapan Standar Metode Uji Kesehatan Ikan</strong></td>
+              <td>Sigit Hendra Irawan P., S.Pi</td>
+              <td>198506142010121003</td>
+            </tr>
+          </tbody>
+        </table>
 
-2. PEJABAT PENGAWAS / KEPALA SUBBAGIAN UMUM:
-   Nama: Zaenal Arifin, A.Md
-   NIP: 197905182003121002
-   Jabatan: Kepala Subbagian Umum
+        <div class="legal-box">
+          <p style="margin: 4px 0;"><strong>Diktum Ketetapan:</strong></p>
+          <p style="margin: 4px 0; font-size: 10pt;">Keputusan ini berlaku sejak tanggal 15 Januari 2026 dan menjadi acuan operasional bagi seluruh unit kerja di lingkungan Balai Uji Standar PPMHKP Jakarta.</p>
+        </div>
 
-3. KELOMPOK JABATAN FUNGSIONAL DAN PELAKSANA:
-   a. KETUA TIM KERJA PENGEMBANGAN TEKNIK DAN METODE UJI KESEHATAN IKAN MKHP
-      Nama: Dini Fajriyani, S.Pi., M.Pi
-      NIP: 198704122011012001
+        <div class="sign-area">
+          <p>Ditetapkan di: Jakarta<br>Pada tanggal: 15 Januari 2026</p>
+          <br><br><br>
+          <p><strong>Ahmad Jauhari, S.St.Pi., M.Sc.</strong><br>NIP. 198212312006041003</p>
+        </div>
+      </body>
+      </html>
+    `;
 
-   b. KOORDINATOR FUNGSIONAL
-      Nama: Iswadi Idris, S.Si
-      NIP: 198302192009011002
-
-   c. KETUA TIM KERJA PENERAPAN STANDAR METODE UJI KESEHATAN IKAN MKHP
-      Nama: Sigit Hendra Irawan P., S.Pi
-      NIP: 198506142010121003
-
-Salinan sah keputusan ini berlaku sejak tanggal ditetapkan.
-Ditetapkan di Jakarta, 15 Januari 2026.`;
-
+    const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword;charset=utf-8' });
     const element = document.createElement('a');
-    const file = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    element.href = URL.createObjectURL(file);
+    element.href = URL.createObjectURL(blob);
     element.download = 'Bagan-Struktural-BUSPM-2026.doc';
     document.body.appendChild(element);
     element.click();

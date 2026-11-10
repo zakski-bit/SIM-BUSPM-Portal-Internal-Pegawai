@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isAdmin && (
             <span className="text-[10px] text-bpp-amber font-bold flex items-center gap-0.5">
               <ShieldAlert className="w-3 h-3" />
-              <span>KTU</span>
+              <span>Admin</span>
             </span>
           )}
         </div>

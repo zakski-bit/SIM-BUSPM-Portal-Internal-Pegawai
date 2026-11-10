@@ -10,12 +10,11 @@ interface PengumumanViewProps {
 }
 
 export const PengumumanView: React.FC<PengumumanViewProps> = ({
-  announcements: initialItems,
+  announcements,
   currentUser,
   onAddAnnouncement,
   onDeleteAnnouncement
 }) => {
-  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(initialItems);
   const [showModal, setShowModal] = useState(false);
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
@@ -36,7 +35,6 @@ export const PengumumanView: React.FC<PengumumanViewProps> = ({
       publisher: `${currentUser.name} (${currentUser.jobTitle})`
     };
 
-    setAnnouncements((prev) => [newItem, ...prev]);
     if (onAddAnnouncement) onAddAnnouncement(newItem);
     setTitle('');
     setSummary('');
@@ -45,7 +43,6 @@ export const PengumumanView: React.FC<PengumumanViewProps> = ({
 
   const handleDelete = (id: string, title: string) => {
     if (confirm(`Hapus pengumuman resmi: "${title}"?`)) {
-      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
       if (onDeleteAnnouncement) onDeleteAnnouncement(id);
     }
   };

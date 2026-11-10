@@ -262,7 +262,7 @@ export const PegawaiView: React.FC<PegawaiViewProps> = ({
                       {hasAdminAccess(emp.role) && (
                         <span className="text-[10px] font-bold text-bpp-marine dark:text-blue-400 flex items-center gap-0.5">
                           <ShieldCheck className="w-3 h-3" />
-                          <span>Pimpinan / KTU</span>
+                          <span>Super Admin</span>
                         </span>
                       )}
                     </div>

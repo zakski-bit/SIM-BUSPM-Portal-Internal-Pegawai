@@ -5,33 +5,51 @@ import { ProjectItem } from '../../types';
 interface ProjectViewProps {
   projects: ProjectItem[];
   onAddProject?: (proj: ProjectItem) => void;
+  onUpdateProjects?: (projects: ProjectItem[]) => void;
 }
 
-export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProjects, onAddProject }) => {
+export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProjects, onAddProject, onUpdateProjects }) => {
   const [projects, setProjects] = useState<ProjectItem[]>(initialProjects);
-  const [activeProject, setActiveProject] = useState<ProjectItem>(initialProjects[0]);
+  const [activeProject, setActiveProject] = useState<ProjectItem>(initialProjects[0] || {
+    id: 'proj-1',
+    title: 'Portal Intranet SIM-BUSPM Terpadu',
+    progressPercent: 55,
+    status: 'BERJALAN',
+    leader: 'Zaenal Arifin, A.Md',
+    deadline: '30 November 2026',
+    tasks: []
+  });
   const [newQuestionText, setNewQuestionText] = useState('');
   const [showAddProjectModal, setShowAddProjectModal] = useState(false);
   const [newProjTitle, setNewProjTitle] = useState('');
   const [newProjLeader, setNewProjLeader] = useState('Zaenal Arifin, A.Md');
   const [newProjDeadline, setNewProjDeadline] = useState('31 Desember 2026');
 
+  // Keep state in sync if parent initialProjects change
+  React.useEffect(() => {
+    setProjects(initialProjects);
+    if (!initialProjects.find((p) => p.id === activeProject.id) && initialProjects.length > 0) {
+      setActiveProject(initialProjects[0]);
+    }
+  }, [initialProjects]);
+
   const handleToggleTask = (projectId: string, taskId: string) => {
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== projectId) return p;
-        const updatedTasks = p.tasks.map((t) =>
-          t.id === taskId ? { ...t, completed: !t.completed } : t
-        );
-        const completedCount = updatedTasks.filter((t) => t.completed).length;
-        const newPercent = Math.round((completedCount / updatedTasks.length) * 100);
-        return {
-          ...p,
-          tasks: updatedTasks,
-          progressPercent: newPercent
-        };
-      })
-    );
+    const updated = projects.map((p) => {
+      if (p.id !== projectId) return p;
+      const updatedTasks = p.tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      );
+      const completedCount = updatedTasks.filter((t) => t.completed).length;
+      const newPercent = Math.round((completedCount / updatedTasks.length) * 100);
+      return {
+        ...p,
+        tasks: updatedTasks,
+        progressPercent: newPercent
+      };
+    });
+
+    setProjects(updated);
+    if (onUpdateProjects) onUpdateProjects(updated);
 
     setActiveProject((prev) => {
       if (prev.id !== projectId) return prev;
@@ -60,7 +78,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProje
     };
 
     setActiveProject(updatedProject);
-    setProjects((prev) => prev.map((p) => (p.id === activeProject.id ? updatedProject : p)));
+    const updatedList = projects.map((p) => (p.id === activeProject.id ? updatedProject : p));
+    setProjects(updatedList);
+    if (onUpdateProjects) onUpdateProjects(updatedList);
   };
 
   const handleAddQuestionIssue = (e: React.FormEvent) => {
@@ -85,7 +105,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProje
     };
 
     setActiveProject(updatedProject);
-    setProjects((prev) => prev.map((p) => (p.id === activeProject.id ? updatedProject : p)));
+    const updatedList = projects.map((p) => (p.id === activeProject.id ? updatedProject : p));
+    setProjects(updatedList);
+    if (onUpdateProjects) onUpdateProjects(updatedList);
     setNewQuestionText('');
   };
 
@@ -106,9 +128,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProje
       ]
     };
 
-    setProjects((prev) => [newProj, ...prev]);
+    const updatedList = [newProj, ...projects];
+    setProjects(updatedList);
     setActiveProject(newProj);
     if (onAddProject) onAddProject(newProj);
+    if (onUpdateProjects) onUpdateProjects(updatedList);
     setShowAddProjectModal(false);
     setNewProjTitle('');
   };
@@ -257,17 +281,17 @@ export const ProjectView: React.FC<ProjectViewProps> = ({ projects: initialProje
           <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
             Tambah Isu / Kendala Baru pada Project Ini:
           </div>
-          <form onSubmit={handleAddQuestionIssue} className="flex gap-2">
+          <form onSubmit={handleAddQuestionIssue} className="flex flex-col sm:flex-row gap-2 w-full max-w-full">
             <input
               type="text"
               value={newQuestionText}
               onChange={(e) => setNewQuestionText(e.target.value)}
               placeholder="Contoh: Menunggu pengadaan reagen kimia dari pihak ketiga..."
-              className="flex-1 p-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-white"
+              className="flex-1 p-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-900 dark:text-white min-w-0"
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-bpp-marine hover:bg-bpp-marine-dark text-white text-xs font-semibold rounded-md shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 bg-bpp-marine hover:bg-bpp-marine-dark text-white text-xs font-semibold rounded-md shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <Send className="w-3 h-3" />
               <span>Tambah Task/Issue</span>

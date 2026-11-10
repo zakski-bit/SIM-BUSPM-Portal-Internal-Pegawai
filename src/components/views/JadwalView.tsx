@@ -29,12 +29,15 @@ export const JadwalView: React.FC<JadwalViewProps> = ({
     e.preventDefault();
     if (!title.trim()) return;
 
+    const hasYear = /\b\d{4}\b/.test(dateStr);
+    const fullDateTime = hasYear ? `${dateStr}, ${timeStr} WIB` : `${dateStr} 2026, ${timeStr} WIB`;
+
     const newItem: ScheduleItem = {
       id: `sch-${Date.now()}`,
       title,
       dateStr,
       timeStr,
-      fullDateTime: `${dateStr} 2026, ${timeStr} WIB`,
+      fullDateTime,
       location,
       category,
       organizer: 'Anda'

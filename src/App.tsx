@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Employee, ScheduleItem, NoteItem, ProjectItem, DocumentItem, AnnouncementItem } from './types';
+import { Employee, ScheduleItem, NoteItem, ProjectItem, DocumentItem, AnnouncementItem, ChatMessage } from './types';
 import {
   INITIAL_EMPLOYEES,
   INITIAL_DIVISIONS,
   INITIAL_SCHEDULES,
   INITIAL_PROJECTS,
   INITIAL_NOTES,
-  INITIAL_CHAT_MESSAGES,
+  INITIAL_CHANNEL_MESSAGES,
+  INITIAL_DIRECT_MESSAGES,
   INITIAL_ANNOUNCEMENTS,
   INITIAL_DOCUMENTS
 } from './data/mockData';
@@ -25,6 +26,19 @@ import { DocsView } from './components/views/DocsView';
 import { PengumumanView } from './components/views/PengumumanView';
 import { MobileNav } from './components/MobileNav';
 
+// Safe localStorage loader with defensive fallback
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    if (item) {
+      return JSON.parse(item);
+    }
+  } catch (e) {
+    console.warn(`Gagal memuat ${key} dari localStorage:`, e);
+  }
+  return fallback;
+}
+
 export const App: React.FC = () => {
   // Authentication State: Defaults to null (Login Gateway), demo defaults to Ahmad Jauhari (Kepala Balai)
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
@@ -38,14 +52,34 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [globalSearch, setGlobalSearch] = useState('');
 
-  // Application Data States (CRUD enabled)
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  // Application Data States (CRUD enabled & Persisted in localStorage)
+  const [employees, setEmployees] = useState<Employee[]>(() =>
+    loadFromStorage('buspm_employees', INITIAL_EMPLOYEES)
+  );
   const [divisions] = useState(INITIAL_DIVISIONS);
-  const [schedules, setSchedules] = useState<ScheduleItem[]>(INITIAL_SCHEDULES);
-  const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
-  const [notes, setNotes] = useState<NoteItem[]>(INITIAL_NOTES);
-  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(INITIAL_ANNOUNCEMENTS);
-  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
+  const [schedules, setSchedules] = useState<ScheduleItem[]>(() =>
+    loadFromStorage('buspm_schedules', INITIAL_SCHEDULES)
+  );
+  const [projects, setProjects] = useState<ProjectItem[]>(() =>
+    loadFromStorage('buspm_projects', INITIAL_PROJECTS)
+  );
+  const [notes, setNotes] = useState<NoteItem[]>(() =>
+    loadFromStorage('buspm_notes', INITIAL_NOTES)
+  );
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(() =>
+    loadFromStorage('buspm_announcements', INITIAL_ANNOUNCEMENTS)
+  );
+  const [documents, setDocuments] = useState<DocumentItem[]>(() =>
+    loadFromStorage('buspm_documents', INITIAL_DOCUMENTS)
+  );
+
+  // Chat Data States (Persisted so switching modules does not erase messages)
+  const [channelMessages, setChannelMessages] = useState<Record<string, ChatMessage[]>>(() =>
+    loadFromStorage('buspm_channel_messages', INITIAL_CHANNEL_MESSAGES)
+  );
+  const [directMessages, setDirectMessages] = useState<Record<string, ChatMessage[]>>(() =>
+    loadFromStorage('buspm_direct_messages', INITIAL_DIRECT_MESSAGES)
+  );
 
   // Sync Dark Mode class with <html>
   useEffect(() => {
@@ -57,6 +91,39 @@ export const App: React.FC = () => {
       localStorage.setItem('buspm_theme', 'light');
     }
   }, [isDarkMode]);
+
+  // Sync Data States to localStorage
+  useEffect(() => {
+    localStorage.setItem('buspm_employees', JSON.stringify(employees));
+  }, [employees]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_schedules', JSON.stringify(schedules));
+  }, [schedules]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_notes', JSON.stringify(notes));
+  }, [notes]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_announcements', JSON.stringify(announcements));
+  }, [announcements]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_documents', JSON.stringify(documents));
+  }, [documents]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_channel_messages', JSON.stringify(channelMessages));
+  }, [channelMessages]);
+
+  useEffect(() => {
+    localStorage.setItem('buspm_direct_messages', JSON.stringify(directMessages));
+  }, [directMessages]);
 
   const handleToggleDarkMode = () => {
     setIsDarkMode((prev) => !prev);
@@ -115,6 +182,10 @@ export const App: React.FC = () => {
     setProjects((prev) => [item, ...prev]);
   };
 
+  const handleUpdateProjects = (updatedProjects: ProjectItem[]) => {
+    setProjects(updatedProjects);
+  };
+
   // CRUD Handlers for Documents
   const handleAddDocument = (item: DocumentItem) => {
     setDocuments((prev) => [item, ...prev]);
@@ -133,9 +204,24 @@ export const App: React.FC = () => {
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
   };
 
+  // Chat Message Updates
+  const handleUpdateChannelMessages = (channelId: string, newMsg: ChatMessage) => {
+    setChannelMessages((prev) => ({
+      ...prev,
+      [channelId]: [...(prev[channelId] || []), newMsg]
+    }));
+  };
+
+  const handleUpdateDirectMessages = (recipientId: string, newMsg: ChatMessage) => {
+    setDirectMessages((prev) => ({
+      ...prev,
+      [recipientId]: [...(prev[recipientId] || []), newMsg]
+    }));
+  };
+
   // If not logged in, render Login Gateway with Video Background & Audio
   if (!currentUser) {
-    return <LoginGateway onLoginSuccess={handleLoginSuccess} />;
+    return <LoginGateway onLoginSuccess={handleLoginSuccess} employees={employees} />;
   }
 
   return (
@@ -204,7 +290,10 @@ export const App: React.FC = () => {
             <ChatView
               currentUser={currentUser}
               employees={employees}
-              initialMessages={INITIAL_CHAT_MESSAGES}
+              channelMessages={channelMessages}
+              directMessages={directMessages}
+              onUpdateChannelMessages={handleUpdateChannelMessages}
+              onUpdateDirectMessages={handleUpdateDirectMessages}
             />
           )}
 
@@ -229,12 +318,14 @@ export const App: React.FC = () => {
             <ProjectView
               projects={projects}
               onAddProject={handleAddProject}
+              onUpdateProjects={handleUpdateProjects}
             />
           )}
 
           {activeTab === 'docs' && (
             <DocsView
               documents={documents}
+              currentUser={currentUser}
               onAddDocument={handleAddDocument}
               onDeleteDocument={handleDeleteDocument}
               searchFilter={globalSearch}
