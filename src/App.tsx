@@ -40,8 +40,10 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 export const App: React.FC = () => {
-  // Authentication State: Defaults to null (Login Gateway), demo defaults to Ahmad Jauhari (Kepala Balai)
-  const [currentUser, setCurrentUser] = useState<Employee | null>(null);
+  // Authentication State: Persisted so F5 refresh preserves active session
+  const [currentUser, setCurrentUser] = useState<Employee | null>(() =>
+    loadFromStorage<Employee | null>('buspm_session_user', null)
+  );
 
   // Theme State: Default is Light Mode (Crisp White), with Dark Mode toggle
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -80,6 +82,15 @@ export const App: React.FC = () => {
   const [directMessages, setDirectMessages] = useState<Record<string, ChatMessage[]>>(() =>
     loadFromStorage('buspm_direct_messages', INITIAL_DIRECT_MESSAGES)
   );
+
+  // Sync Current User Session to localStorage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('buspm_session_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('buspm_session_user');
+    }
+  }, [currentUser]);
 
   // Sync Dark Mode class with <html>
   useEffect(() => {

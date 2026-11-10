@@ -16,18 +16,31 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
   employees = INITIAL_EMPLOYEES
 }) => {
   const [category, setCategory] = useState<EmployeeCategory>('ASN');
-  const [username, setUsername] = useState('198212312006041003'); // Ahmad Jauhari default
-  const [password, setPassword] = useState('password123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Rate limiting / Brute force prevention
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  // Rate limiting / Brute force prevention (persisted across F5 reload)
+  const [failedAttempts, setFailedAttempts] = useState<number>(() => {
+    return parseInt(localStorage.getItem('buspm_failed_attempts') || '0', 10);
+  });
+  const [lockoutSeconds, setLockoutSeconds] = useState<number>(() => {
+    const until = parseInt(localStorage.getItem('buspm_lockout_until') || '0', 10);
+    return Math.max(0, Math.ceil((until - Date.now()) / 1000));
+  });
 
   useEffect(() => {
     if (lockoutSeconds > 0) {
-      const timer = setTimeout(() => setLockoutSeconds(lockoutSeconds - 1), 1000);
+      const timer = setTimeout(() => {
+        const newSecs = lockoutSeconds - 1;
+        setLockoutSeconds(newSecs);
+        if (newSecs <= 0) {
+          localStorage.removeItem('buspm_lockout_until');
+          localStorage.removeItem('buspm_failed_attempts');
+          setFailedAttempts(0);
+        }
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [lockoutSeconds]);
@@ -35,10 +48,19 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
   const handleCategoryChange = (newCat: EmployeeCategory) => {
     setCategory(newCat);
     setError(null);
-    if (newCat === 'ASN') {
-      setUsername('198212312006041003'); // Ahmad Jauhari (Kepala Balai)
+  };
+
+  const registerFailure = (msg: string) => {
+    const newAttempts = failedAttempts + 1;
+    setFailedAttempts(newAttempts);
+    localStorage.setItem('buspm_failed_attempts', newAttempts.toString());
+    if (newAttempts >= 5) {
+      const lockUntil = Date.now() + 30000;
+      localStorage.setItem('buspm_lockout_until', lockUntil.toString());
+      setLockoutSeconds(30);
+      setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
     } else {
-      setUsername('3174091102960002'); // Fajar Ramadhan (PPNPN)
+      setError(msg);
     }
   };
 
@@ -60,34 +82,22 @@ export const LoginGateway: React.FC<LoginGatewayProps> = ({
     );
 
     if (!found) {
-      const newAttempts = failedAttempts + 1;
-      setFailedAttempts(newAttempts);
-      if (newAttempts >= 5) {
-        setLockoutSeconds(30);
-        setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
-      } else {
-        setError(`NIP atau NIK "${trimmedUser}" tidak terdaftar di sistem balai.`);
-      }
+      registerFailure(`NIP atau NIK "${trimmedUser}" tidak terdaftar di sistem balai.`);
       return;
     }
 
     // 2. Validate password (reject invalid password!)
     const isPasswordValid = VALID_PASSWORDS.includes(trimmedPass);
     if (!isPasswordValid) {
-      const newAttempts = failedAttempts + 1;
-      setFailedAttempts(newAttempts);
-      if (newAttempts >= 5) {
-        setLockoutSeconds(30);
-        setError('Terlalu banyak percobaan gagal. Akses dibatasi selama 30 detik untuk keamanan sistem.');
-      } else {
-        setError('Password kedinasan yang Anda masukkan salah. Silakan periksa kembali.');
-      }
+      registerFailure('Password kedinasan yang Anda masukkan salah. Silakan periksa kembali.');
       return;
     }
 
     // Authentication successful
     setError(null);
     setFailedAttempts(0);
+    localStorage.removeItem('buspm_failed_attempts');
+    localStorage.removeItem('buspm_lockout_until');
     onLoginSuccess(found);
   };
 

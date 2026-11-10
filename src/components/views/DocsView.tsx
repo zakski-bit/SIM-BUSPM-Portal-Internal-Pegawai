@@ -39,16 +39,31 @@ export const DocsView: React.FC<DocsViewProps> = ({
     return matchesCat && matchesSearch;
   });
 
+  const escapeHtml = (unsafe: string): string => {
+    return (unsafe || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   const handleDownload = (doc: DocumentItem) => {
     let blob: Blob;
-    let fileName = `${doc.code}.${doc.format.toLowerCase()}`;
+    const safeTitle = escapeHtml(doc.title);
+    const safeCode = escapeHtml(doc.code);
+    const safeCategory = escapeHtml(doc.category);
+    const safeFormat = escapeHtml(doc.format);
+    const safeSize = escapeHtml(doc.fileSize);
+    const safeDate = escapeHtml(doc.uploadedAt);
+    let fileName = `${safeCode}.${doc.format.toLowerCase()}`;
 
     if (doc.format === 'DOCX') {
       const docHtml = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
           <meta charset='utf-8'>
-          <title>${doc.title}</title>
+          <title>${safeTitle}</title>
           <style>
             body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; margin: 2.5cm; color: #111; }
             .header { text-align: center; border-bottom: 3px double #003366; padding-bottom: 12px; margin-bottom: 24px; }
@@ -66,11 +81,11 @@ export const DocsView: React.FC<DocsViewProps> = ({
             <p>Balai Uji Standar PPMHKP Jakarta • Jl. Raya Setu No. 1, Cipayung, Jakarta Timur 13880</p>
           </div>
           <div class="meta-box">
-            <h3 style="margin-top:0;">DOKUMEN RESMI: ${doc.title}</h3>
-            <p><strong>Kode Dokumen:</strong> ${doc.code}</p>
-            <p><strong>Kategori Mutu:</strong> ${doc.category}</p>
-            <p><strong>Format & Ukuran:</strong> ${doc.format} (${doc.fileSize})</p>
-            <p><strong>Tanggal Pengesahan:</strong> ${doc.uploadedAt}</p>
+            <h3 style="margin-top:0;">DOKUMEN RESMI: ${safeTitle}</h3>
+            <p><strong>Kode Dokumen:</strong> ${safeCode}</p>
+            <p><strong>Kategori Mutu:</strong> ${safeCategory}</p>
+            <p><strong>Format & Ukuran:</strong> ${safeFormat} (${safeSize})</p>
+            <p><strong>Tanggal Pengesahan:</strong> ${safeDate}</p>
           </div>
           <div class="content-section">
             <p>Dokumen ini merupakan salinan sah digital standar operasional dan acuan mutu kerja Balai Uji Standar PPMHKP Jakarta.</p>
@@ -80,14 +95,14 @@ export const DocsView: React.FC<DocsViewProps> = ({
         </html>
       `;
       blob = new Blob(['\ufeff', docHtml], { type: 'application/msword;charset=utf-8' });
-      fileName = `${doc.code}.doc`;
+      fileName = `${safeCode}.doc`;
     } else {
       const printableHtml = `
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <title>${doc.title} - SIM-BUSPM</title>
+          <title>${safeTitle} - SIM-BUSPM</title>
           <style>
             @media print { body { margin: 1.5cm; } }
             body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px auto; max-width: 800px; line-height: 1.6; color: #1e293b; padding: 20px; }
@@ -107,11 +122,11 @@ export const DocsView: React.FC<DocsViewProps> = ({
             <p>Balai Uji Standar PPMHKP Jakarta • Dokumen Mutu Terakreditasi</p>
           </div>
           <div class="doc-card">
-            <span class="doc-code">${doc.code}</span>
-            <h3 style="margin: 0 0 10px 0; color: #0f172a;">${doc.title}</h3>
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Kategori Dokumen:</strong> ${doc.category}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Format Dokumen:</strong> ${doc.format} (${doc.fileSize})</p>
-            <p style="margin: 4px 0; font-size: 13px;"><strong>Tanggal Rilis:</strong> ${doc.uploadedAt}</p>
+            <span class="doc-code">${safeCode}</span>
+            <h3 style="margin: 0 0 10px 0; color: #0f172a;">${safeTitle}</h3>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Kategori Dokumen:</strong> ${safeCategory}</p>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Format Dokumen:</strong> ${safeFormat} (${safeSize})</p>
+            <p style="margin: 4px 0; font-size: 13px;"><strong>Tanggal Rilis:</strong> ${safeDate}</p>
           </div>
           <div>
             <h4>Deskripsi & Ruang Lingkup Standar</h4>
@@ -124,7 +139,7 @@ export const DocsView: React.FC<DocsViewProps> = ({
         </html>
       `;
       blob = new Blob([printableHtml], { type: 'text/html;charset=utf-8' });
-      fileName = `${doc.code}.html`;
+      fileName = `${safeCode}.html`;
     }
 
     const element = document.createElement('a');
